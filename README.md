@@ -1,4 +1,4 @@
-# Hot100 面试复盘：哈希表、滑动窗口、双指针 10 题
+# Hot100 面试复盘：哈希表、滑动窗口、双指针 12 题
 
 这份笔记用于自己刷题复盘。重点不是死背代码，而是看到题目时能快速判断：
 
@@ -18,6 +18,8 @@
 | 前缀和 + 哈希 | 和为 K 的子数组 | 连续子数组和、可能有负数 | 查 `prefix - k` |
 | 滑动窗口 | 无重复字符的最长子串 | 最长、连续、不重复 | 右扩左缩 |
 | 滑动窗口 | 找到所有字母异位词 | 固定长度窗口、频率一致 | 比较计数器 |
+| 滑动窗口 + 单调队列 | 滑动窗口最大值 | 固定窗口、每个窗口最大值 | 队首保持最大值下标 |
+| 滑动窗口 | 最小覆盖子串 | 最短子串、覆盖目标字符 | 满足后尽量收缩 |
 | 双指针 | 盛最多水的容器 | 两端选边界、最大面积 | 移动短板 |
 | 排序 + 双指针 | 三数之和 | 三元组、去重、和为 0 | 固定一个数转 2Sum |
 | 快慢指针 | 移动零 | 原地调整数组 | 非零前移 |
@@ -264,6 +266,105 @@ class Solution:
 - 频率变成 0 时要删除 key，否则 `Counter` 比较可能受影响。
 - 这题窗口长度固定，和“最长子串”那种可变窗口不同。
 
+### 7. 滑动窗口最大值
+
+题目核心：每个长度为 `k` 的窗口都要快速拿到最大值。
+
+面试口述：
+
+```text
+我用双端队列保存下标，并让队列对应的值保持单调递减。
+每次加入新元素时，把队尾比它小的元素弹出，因为这些元素之后不可能成为最大值。
+如果队首下标已经滑出窗口，就从队首弹出。
+窗口形成后，队首对应的值就是当前窗口最大值。
+```
+
+```python
+from collections import deque
+
+
+class Solution:
+    def maxSlidingWindow(self, nums: list[int], k: int) -> list[int]:
+        queue = deque()
+        ans = []
+
+        for right, num in enumerate(nums):
+            while queue and nums[queue[-1]] <= num:
+                queue.pop()
+
+            queue.append(right)
+
+            if queue[0] <= right - k:
+                queue.popleft()
+
+            if right >= k - 1:
+                ans.append(nums[queue[0]])
+
+        return ans
+```
+
+易错点：
+
+- 队列里存下标，不直接存值，这样才能判断元素是否滑出窗口。
+- 队列单调递减，队首永远是当前窗口最大值。
+- `right >= k - 1` 时窗口才真正形成。
+
+### 8. 最小覆盖子串
+
+题目核心：找到 `s` 中最短的子串，使它覆盖 `t` 中所有字符及出现次数。
+
+面试口述：
+
+```text
+我用 need 统计 t 需要的字符频率，用 window 统计当前窗口频率。
+right 负责扩张窗口，当某个字符数量刚好满足 need 时，valid 加 1。
+当 valid 等于 need 的字符种类数，说明当前窗口已经覆盖 t，此时不断移动 left 缩小窗口并更新最短答案。
+```
+
+```python
+from collections import Counter, defaultdict
+
+
+class Solution:
+    def minWindow(self, s: str, t: str) -> str:
+        need = Counter(t)
+        window = defaultdict(int)
+        left = 0
+        valid = 0
+        start = 0
+        min_len = float('inf')
+
+        for right, ch in enumerate(s):
+            if ch in need:
+                window[ch] += 1
+                if window[ch] == need[ch]:
+                    valid += 1
+
+            while valid == len(need):
+                if right - left + 1 < min_len:
+                    start = left
+                    min_len = right - left + 1
+
+                left_ch = s[left]
+                if left_ch in need:
+                    if window[left_ch] == need[left_ch]:
+                        valid -= 1
+                    window[left_ch] -= 1
+
+                left += 1
+
+        if min_len == float('inf'):
+            return ''
+
+        return s[start:start + min_len]
+```
+
+易错点：
+
+- `valid` 记录的是“满足要求的字符种类数”，不是窗口长度。
+- 收缩窗口前先更新答案，因为当前窗口已经合法。
+- `t` 里可能有重复字符，所以必须比较频率，不能只用 set。
+
 ## 三、双指针模型：左右逼近、原地调整
 
 双指针适合这类信号：
@@ -275,7 +376,7 @@ class Solution:
 根据左右状态决定移动哪一边
 ```
 
-### 7. 盛最多水的容器
+### 9. 盛最多水的容器
 
 题目核心：面积由短板决定。
 
@@ -311,7 +412,7 @@ class Solution:
 - 移动短板，不是移动长板。
 - 宽度每次都会变小，所以只能寄希望于高度变大。
 
-### 8. 三数之和
+### 10. 三数之和
 
 题目核心：排序后固定一个数，剩下部分用双指针找两数之和。
 
@@ -360,7 +461,7 @@ class Solution:
 - 只写固定 `i` 的去重还不够，找到三元组后左右指针也要去重。
 - 排序是这题能用双指针的前提。
 
-### 9. 移动零
+### 11. 移动零
 
 题目核心：把非零元素按原顺序放到前面，剩余位置补 0。
 
@@ -391,7 +492,7 @@ class Solution:
 - 题目要求原地修改，不返回新数组。
 - 非零元素的相对顺序不能变。
 
-### 10. 接雨水
+### 12. 接雨水
 
 题目核心：当前位置能接多少水，由左右两侧最大高度的较小值决定。
 
@@ -510,6 +611,24 @@ for right in range(len(nums)):
 
     if window_valid():
         update_answer()
+```
+
+### 单调队列模板
+
+```python
+queue = deque()
+
+for right, x in enumerate(nums):
+    while queue and nums[queue[-1]] <= x:
+        queue.pop()
+
+    queue.append(right)
+
+    if queue[0] <= right - k:
+        queue.popleft()
+
+    if right >= k - 1:
+        ans.append(nums[queue[0]])
 ```
 
 ### 左右双指针模板
