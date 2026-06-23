@@ -51,6 +51,12 @@ class Solution:
         return []
 ```
 
+Python 知识点：
+
+- `enumerate(nums)` 是 Python 的内置函数。
+- 遍历 `nums` 时，它可以同时拿到下标 `i` 和对应的值 `num`。
+- 所以 `for i, num in enumerate(nums)` 的意思是：每次循环同时取出当前位置和当前位置的数字。
+
 易错点：
 
 - 先查再存，避免同一个元素被用两次。
