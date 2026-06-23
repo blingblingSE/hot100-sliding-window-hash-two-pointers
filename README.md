@@ -73,18 +73,19 @@ key 相同的字符串一定属于同一组。
 ```
 
 ```python
-from collections import defaultdict
-
-
 class Solution:
     def groupAnagrams(self, strs: list[str]) -> list[list[str]]:
-        groups = defaultdict(list)
+        hashmap = {}
 
         for s in strs:
             key = ''.join(sorted(s))
-            groups[key].append(s)
 
-        return list(groups.values())
+            if key not in hashmap:
+                hashmap[key] = []
+
+            hashmap[key].append(s)
+
+        return list(hashmap.values())
 ```
 
 易错点：
